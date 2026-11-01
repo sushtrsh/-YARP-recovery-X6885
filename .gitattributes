@@ -1,0 +1,31 @@
+# Force LF line endings for all text files (critical for Android recovery & Linux CI builds)
+* text=auto eol=lf
+
+# Explicitly ensure shell scripts and configs never have CRLF
+*.sh text eol=lf
+*.rc text eol=lf
+*.mk text eol=lf
+*.bp text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.prop text eol=lf
+*.fstab text eol=lf
+*.flags text eol=lf
+*.xml text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+*.te text eol=lf
+
+# Binary files
+*.bin binary
+*.ko binary
+*.dtb binary
+*.so binary
+*.img binary
+*.drbin binary
+*.tlbin binary
+*.tabin binary
