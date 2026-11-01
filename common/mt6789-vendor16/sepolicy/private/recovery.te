@@ -20,6 +20,16 @@ recovery_only(`
   typeattribute mtk_recovery_tee coredomain;
   typeattribute recovery mlstrustedsubject;
 
+  # Permissive recovery (like stock twrp.te). Domains below are the ones that
+  # init.recovery.mt6789.rc / init.tee.rc start with an explicit seclabel;
+  # twrp.te only covers recovery, init, logd, adbd, fastbootd, postinstall, ueventd.
+  permissive mtk_recovery_tee;
+  permissive hal_gatekeeper_default;
+  permissive hal_keymint_default;
+  permissive hal_bootctl_default;
+  permissive hal_health_default;
+  permissive keystore;
+
   # Recovery ramdisk executables/libraries retain the rootfs label. Give each
   # daemon its own enforcing process domain without relabeling Android partitions.
   # logd is dynamically linked too: entrypoint alone cannot map its rootfs libraries.

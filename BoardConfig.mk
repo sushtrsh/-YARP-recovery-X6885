@@ -142,3 +142,5 @@ TARGET_OTA_ASSERT_DEVICE := Infinix-X6885,X6885
 
 # TWRP configurations
 -include $(DEVICE_PATH)/twrp.mk
+
+SELINUX_IGNORE_NEVERALLOWS := true
