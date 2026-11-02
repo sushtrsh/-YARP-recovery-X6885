@@ -172,6 +172,16 @@ jobs:
         path: ~/.ccache
         key: ${{ steps.ccache.outputs.cache-primary-key }}
 
+    - name: Ukuran ramdisk
+      if: always()
+      run: |
+        cd twrp
+        P=out/target/product/${{ github.event.inputs.DEVICE_NAME }}
+        ls -l $P/obj/PACKAGING/*/*.cpio.gz $P/vendor-bootconfig.img 2>/dev/null || true
+        du -sh $P/vendor_ramdisk $P/recovery/root 2>/dev/null || true
+        du -ah $P/recovery/root 2>/dev/null | sort -rh | head -30 || true
+      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
+
     - name: Check output files
       if: ${{ !cancelled() }}
       run: |
