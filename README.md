@@ -31,28 +31,6 @@ Unofficial TWRP Recovery device tree for Android 16 on the MediaTek MT6789
    - `MAKEFILE_NAME`: `twrp_X6885`
    - `BUILD_TARGET`: `vendorboot`
 
-## Manual Local Build Instructions
-
-```bash
-# 1. Initialize TWRP A16 manifest
-mkdir twrp-16 && cd twrp-16
-repo init --depth=1 -u https://github.com/TWRP-Test/platform_manifest_twrp_aosp.git -b twrp-16.0
-
-# 2. Sync sources
-repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
-
-# 3. Clone this device tree
-git clone <your-repo-url> device/infinix/X6885
-
-# 4. Set environment and lunch target
-source build/envsetup.sh
-source device/infinix/X6885/vendorsetup.sh
-lunch twrp_X6885-bp2a-eng # or simply: lunch twrp_X6885
-
-# 5. Build vendor_boot image
-mka adbd vendorbootimage -j$(nproc --all)
-```
-
 ## Flashing Instructions
 
 Flash the compiled vendor boot image via fastboot:
