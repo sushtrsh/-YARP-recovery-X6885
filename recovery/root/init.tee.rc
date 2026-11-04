@@ -1,5 +1,9 @@
-# Start Daemon (Registry directories should already be present)
-service mobicore /vendor/bin/mcDriverDaemon --P1 /mnt/vendor/persist/mcRegistry \
+# Stock Trustonic daemon. Binary, TA registry (/vendor/app/mcRegistry) and libs
+# live on the real /vendor (mounted from super by TWRP), not in the ramdisk.
+# mcdaemon.sh waits for /vendor/bin/mcDriverDaemon, then runs it in a retry loop
+# and logs to /tmp/mcd.log. Started from init.recovery.mt6789.rc on
+# fstab.additional=1 (hence "disabled").
+service mobicore /system/bin/sh /system/etc/mcdaemon.sh --P1 /mnt/vendor/persist/mcRegistry \
 	-r /vendor/app/mcRegistry/06090000000000000000000000000000.drbin \
 	-r /vendor/app/mcRegistry/020f0000000000000000000000000000.drbin \
 	-r /vendor/app/mcRegistry/05120000000000000000000000000000.drbin \
@@ -31,6 +35,8 @@ service mobicore /vendor/bin/mcDriverDaemon --P1 /mnt/vendor/persist/mcRegistry 
 	-r /vendor/app/mcRegistry/07210000000000000000000000000000.drbin
     user root
     group root system
+    class core
+    disabled
     seclabel u:r:mtk_recovery_tee:s0
 
 # t-Drv naming
@@ -69,15 +75,15 @@ on post-fs
     # Create mcRegistry to store failure record
     mkdir /mnt/vendor/persist/mcRegistry 0771 system system
     mkdir /mnt/vendor/persist/mcRegistry/tee_logs 0771 system system
-    mkdir /mnt/vendor/persist/keybox 0771 system system
-    #USD: add [paytrigger] by tie.huang add 20280217 start
-    mkdir /mnt/vendor/persist/paytrigger 0777 system system
-    #USD: add [paytrigger] by tie.huang add 20280217 end
+    # keybox, paytrigger dan startPara sudah ada di persist asli. Jangan disentuh dari
+    # recovery supaya owner/mode aslinya (mis. root:system) tidak berubah.
+    #mkdir /mnt/vendor/persist/keybox 0771 system system
+    #mkdir /mnt/vendor/persist/paytrigger 0777 system system
+    #mkdir /mnt/vendor/persist/startPara
+    #chown system system /mnt/vendor/persist/startPara
+    #chmod 0777 /mnt/vendor/persist/startPara
 
     #USD:Create startPara for anti-crack by shishan.zheng 20250218 start
-    mkdir /mnt/vendor/persist/startPara
-    chown system system /mnt/vendor/persist/startPara
-    chmod 0777 /mnt/vendor/persist/startPara
     mkdir /tranfs/startPara 0700 system system
     chown system system /tranfs/startPara
     chmod 0777 /tranfs/startPara

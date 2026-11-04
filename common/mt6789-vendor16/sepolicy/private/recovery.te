@@ -53,7 +53,16 @@ recovery_only(`
   allow { hal_gatekeeper_default mtk_recovery_tee } mtk_recovery_gatekeeper_state_file:file create_file_perms;
   allowxperm { mtk_recovery_tee hal_gatekeeper_default hal_keymint_default } tee_device:chr_file ioctl { 0x4d00-0x4dff };
   allow mtk_recovery_tee vendor_file:dir r_dir_perms;
-  allow mtk_recovery_tee vendor_file:file r_file_perms;
+  allow mtk_recovery_tee vendor_file:file { r_file_perms x_file_perms map };
+  # mcdaemon.sh (rootfs sh) forks toolbox + /vendor/bin/mcDriverDaemon in the same domain.
+  allow mtk_recovery_tee rootfs:file { execute_no_trans map };
+  # Binaries/libs now run from the real /vendor (mounted from super by TWRP). Depending on
+  # the xattrs they show up as vendor_file or unlabeled.
+  allow { hal_gatekeeper_default hal_keymint_default } { vendor_file unlabeled }:dir r_dir_perms;
+  allow { hal_gatekeeper_default hal_keymint_default } { vendor_file unlabeled }:file { r_file_perms x_file_perms map entrypoint };
+  allow mtk_recovery_tee unlabeled:file { x_file_perms map };
+  domain_trans(init, vendor_file, { hal_gatekeeper_default hal_keymint_default })
+  domain_trans(init, unlabeled, { hal_gatekeeper_default hal_keymint_default })
   allow mtk_recovery_tee mnt_vendor_file:dir create_dir_perms;
   allow mtk_recovery_tee mnt_vendor_file:file create_file_perms;
   allow mtk_recovery_tee vendor_data_file:dir create_dir_perms;

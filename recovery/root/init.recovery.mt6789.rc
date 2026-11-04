@@ -1,5 +1,10 @@
 import /init.tee.rc
 
+on early-init
+    # Keep /vendor mounted: mcDriverDaemon, KeyMint and Gatekeeper run from there
+    # long after TWRP's fstab pass (needs patches/02-twrp-keep-vendor-mounted.patch).
+    setprop ro.twrp.keep_vendor_mounted 1
+
 on init
     restorecon /kmsg
     restorecon_recursive /sys/devices/platform/soc/soc:mtk-leds
@@ -27,9 +32,25 @@ on fs
     wait /dev/block/platform/soc/11270000.ufshci
     symlink /dev/block/platform/soc/11270000.ufshci /dev/block/bootdevice
 	install_keyring
+    # Secure storage for mcDriverDaemon must be on the real persist, not tmpfs
+    # (init.tee.rc post-fs creates mcRegistry/tee_logs below it).
+    wait /dev/block/by-name/persist 5
+    mkdir /mnt/vendor 0755 root root
+    mkdir /mnt/vendor/persist 0771 system system
+    # Opsi sama dengan fstab (noatime,nosuid,nodev,noauto_da_alloc,commit=1,nodelalloc).
+    # Flag fs_mgr (wait,check,formattable) tidak berlaku di mount manual; fsck tidak jalan.
+    mount ext4 /dev/block/by-name/persist /mnt/vendor/persist nosuid nodev noatime noauto_da_alloc,commit=1,nodelalloc
 
-on property:ro.crypto.state=encrypted && property:ro.boot.dynamic_partitions=true
-	start mobicore
+on property:fstab.additional=1
+    # TWRP mounted /vendor (and /odm) from super and set fstab.additional.
+    # ueventd created /dev/mobicore* before /vendor/etc/ueventd.rc was readable,
+    # so restore ownership here. Only init builtins: an exec_start in this
+    # action makes init silently drop the commands after it (start mobicore).
+    chown system system /dev/mobicore
+    chown system system /dev/mobicore-user
+    chmod 0660 /dev/mobicore
+    chmod 0660 /dev/mobicore-user
+    start mobicore
 
 on property:ro.vendor.trustonic.ready=true
     start vendor.gatekeeper-default
@@ -41,6 +62,7 @@ on property:servicemanager.ready=true
 # Gatekeeper
 service vendor.gatekeeper-default /vendor/bin/hw/android.hardware.gatekeeper-service.trustonic
 	class early_hal
+	disabled
     interface android.hardware.gatekeeper@1.0::IGatekeeper default
     user system
     group system
@@ -49,6 +71,7 @@ service vendor.gatekeeper-default /vendor/bin/hw/android.hardware.gatekeeper-ser
 # Keymint
 service vendor.keymint-trustonic /vendor/bin/hw/android.hardware.security.keymint@3.0-service.trustonic --rkp_version=v1
     class early_hal
+    disabled
 	interface android.hardware.keymaster@4.0::IKeymasterDevice default
     interface android.hardware.keymaster@4.1::IKeymasterDevice default
     user system
