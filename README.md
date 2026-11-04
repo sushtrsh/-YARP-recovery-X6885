@@ -1,4 +1,4 @@
-# TeamWin Recovery Project (TWRP) for Infinix X6885
+# YARP Recovery Project for Infinix X6885
 
 Unofficial TWRP Recovery device tree for Android 16 on the MediaTek MT6789
 
