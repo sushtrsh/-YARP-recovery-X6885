@@ -37,9 +37,8 @@ on fs
     wait /dev/block/by-name/persist 5
     mkdir /mnt/vendor 0755 root root
     mkdir /mnt/vendor/persist 0771 system system
-    # Opsi sama dengan fstab (noatime,nosuid,nodev,noauto_da_alloc,commit=1,nodelalloc).
-    # Flag fs_mgr (wait,check,formattable) tidak berlaku di mount manual; fsck tidak jalan.
-    mount ext4 /dev/block/by-name/persist /mnt/vendor/persist nosuid nodev noatime noauto_da_alloc,commit=1,nodelalloc
+    # Persist TIDAK di-mount di sini: TWRP ('Unmounting main partitions') melepasnya
+    # beberapa ratus ms kemudian. Mount dilakukan di on property:fstab.additional=1.
 
 on property:fstab.additional=1
     # TWRP mounted /vendor (and /odm) from super and set fstab.additional.
@@ -50,6 +49,10 @@ on property:fstab.additional=1
     chown system system /dev/mobicore-user
     chmod 0660 /dev/mobicore
     chmod 0660 /dev/mobicore-user
+    # Persist asli untuk registry mcDriverDaemon. Harus setelah TWRP selesai unmount
+    # main partitions. Opsi sama dengan fstab (flag fs_mgr wait/check/formattable tidak
+    # berlaku; fsck tidak jalan).
+    mount ext4 /dev/block/by-name/persist /mnt/vendor/persist nosuid nodev noatime noauto_da_alloc,commit=1,nodelalloc
     start mobicore
 
 on property:ro.vendor.trustonic.ready=true
