@@ -159,6 +159,16 @@ jobs:
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
       continue-on-error: true
 
+    - name: Upload Patch Debug (jika ada patch gagal)
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: patch-debug-${{ github.event.inputs.DEVICE_NAME }}-${{ github.run_id }}
+        path: |
+          ${{ steps.pwd.outputs.workspace-folder }}/twrp/patch_debug
+          ${{ steps.pwd.outputs.workspace-folder }}/patch_debug
+        if-no-files-found: ignore
+
     - name: Show ccache statistics
       if: always() && github.event.inputs.USE_CCACHE == 'true'
       run: |

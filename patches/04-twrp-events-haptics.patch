@@ -1,0 +1,56 @@
+diff --git a/bootable/recovery/twrpminui/events.cpp b/bootable/recovery/twrpminui/events.cpp
+index b98d4cd..0d34257 100644
+--- a/bootable/recovery/twrpminui/events.cpp
++++ b/bootable/recovery/twrpminui/events.cpp
+@@ -33,6 +33,7 @@
+ #include <string.h>
+ #include <fstream>
+ #include <mutex>
++#include <thread>
+ #include "force_feedback.h"
+ #ifdef USE_QTI_AIDL_HAPTICS_FIX_OFF
+ #include <thread>
+@@ -72,6 +73,9 @@ static std::atomic_int vib_on_count = 0;
+ 
+ #define LEDS_HAPTICS_DURATION_FILE	"/sys/class/leds/vibrator/duration"
+ #define LEDS_HAPTICS_ACTIVATE_FILE	"/sys/class/leds/vibrator/activate"
++#define LEDS_HAPTICS_SINGLE_DURATION_FILE	"/sys/class/leds/vibrator_single/duration"
++#define LEDS_HAPTICS_SINGLE_ACTIVATE_FILE	"/sys/class/leds/vibrator_single/activate"
++#define LEDS_HAPTICS_BRIGHTNESS_FILE	"/sys/class/leds/vibrator/brightness"
+ 
+ #ifndef SYN_REPORT
+ #define SYN_REPORT          0x00
+@@ -270,11 +274,21 @@ int vibrate(int timeout_ms)
+         write_to_file(VIBRATOR_TIMEOUT_FILE, tout);
+     }
+ #else
+-    if (std::ifstream(LEDS_HAPTICS_ACTIVATE_FILE).good()) {
++    if (std::ifstream(LEDS_HAPTICS_SINGLE_ACTIVATE_FILE).good()) {
++        write_to_file(LEDS_HAPTICS_SINGLE_DURATION_FILE, tout);
++        write_to_file(LEDS_HAPTICS_SINGLE_ACTIVATE_FILE, "1");
++    } else if (std::ifstream(LEDS_HAPTICS_ACTIVATE_FILE).good()) {
+         write_to_file(LEDS_HAPTICS_DURATION_FILE, tout);
+         write_to_file(LEDS_HAPTICS_ACTIVATE_FILE, "1");
+     } else if (access(VIBRATOR_TIMEOUT_FILE, W_OK) == 0) {
+         write_to_file(VIBRATOR_TIMEOUT_FILE, tout);
++    } else if (access(LEDS_HAPTICS_BRIGHTNESS_FILE, W_OK) == 0) {
++        /* Pulse MTK regulator-vibrator via brightness sysfs attribute */
++        std::thread([timeout_ms] {
++            write_to_file(LEDS_HAPTICS_BRIGHTNESS_FILE, "255");
++            usleep(timeout_ms * 1000);
++            write_to_file(LEDS_HAPTICS_BRIGHTNESS_FILE, "0");
++        }).detach();
+     } else {
+         return twrpminui::play_force_feedback(timeout_ms);
+     }
+@@ -299,7 +313,9 @@ int haptics_available()
+     return access(VIBRATOR_TIMEOUT_FILE, W_OK) == 0;
+ #else
+     return twrpminui::force_feedback_available() ||
++           access(LEDS_HAPTICS_SINGLE_ACTIVATE_FILE, W_OK) == 0 ||
+            access(LEDS_HAPTICS_ACTIVATE_FILE, W_OK) == 0 ||
+-           access(VIBRATOR_TIMEOUT_FILE, W_OK) == 0;
++           access(VIBRATOR_TIMEOUT_FILE, W_OK) == 0 ||
++           access(LEDS_HAPTICS_BRIGHTNESS_FILE, W_OK) == 0;
+ #endif
+ }
