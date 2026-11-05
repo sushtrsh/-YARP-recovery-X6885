@@ -12,6 +12,9 @@ on init
     restorecon /sys/devices/platform/soc/mt_usb/saving
     # Generated mount fstab lives on writable recovery tmpfs.
     symlink /tmp/fstab /etc/fstab
+    # Wi-Fi sockets directory for TWRP GUI2 backend
+    mkdir /tmp/recovery 0770 root root
+    mkdir /tmp/recovery/sockets 0770 root root
     # dmsetup (Format Data) cannot mknod in recovery; point its control node at the real one.
     mkdir /dev/mapper 0755 root root
     symlink /dev/device-mapper /dev/mapper/control
@@ -21,6 +24,13 @@ on init
     insmod /lib/modules/touch/tui-common.ko
     insmod /lib/modules/touch/gt9896s.ko
     insmod /lib/modules/touch/gt9886.ko
+    # Wi-Fi kernel modules
+    insmod /lib/modules/wifi/cfg80211.ko
+    insmod /lib/modules/wifi/wmt_drv.ko
+    insmod /lib/modules/wifi/connfem.ko
+    insmod /lib/modules/wifi/connadp.ko
+    insmod /lib/modules/wifi/wmt_chrdev_wifi.ko
+    insmod /lib/modules/wifi/wlan_drv_gen4m_6789.ko
     export LD_LIBRARY_PATH /system/lib64:/vendor/lib64
 	setprop sys.usb.configfs 1
 	setprop sys.usb.controller "musb-hdrc"
@@ -108,3 +118,13 @@ service keystore2 /system/bin/keystore2 /tmp/misc/keystore
     writepid /dev/cpuset/foreground/tasks
     seclabel u:r:keystore:s0
 	override
+
+# Wi-Fi Supplicant for TWRP GUI2
+service wpa_supplicant /system/bin/wpa_supplicant \
+    -Dnl80211 -iwlan0 -dd -O/tmp/recovery/sockets \
+    -c/system/etc/wifi/wpa_supplicant.conf
+    disabled
+    user root
+    group root wifi
+    seclabel u:r:recovery:s0
+
