@@ -138,9 +138,15 @@ TARGET_USES_MKE2FS          := true
 
 # Debug
 TARGET_USES_LOGD := true
+TARGET_RECOVERY_DEVICE_MODULES += debuggerd strace
+RECOVERY_BINARY_SOURCE_FILES += $(TARGET_OUT_EXECUTABLES)/debuggerd $(TARGET_OUT_EXECUTABLES)/strace
 
 # Assert
 TARGET_OTA_ASSERT_DEVICE := Infinix-X6885,X6885
+
+# Init
+TARGET_INIT_VENDOR_LIB := libinit_X6885
+TARGET_RECOVERY_DEVICE_MODULES += libinit_X6885
 
 # TWRP configurations
 # Crypto
@@ -152,15 +158,21 @@ TW_FORCE_KEYMASTER_VER := true
 # Tools
 TW_INCLUDE_FB2PNG := true
 TW_ENABLE_ALL_PARTITION_TOOLS := true
-TW_INCLUDE_REPACKTOOLS := true
+TW_INCLUDE_REPACKTOOLS := false
+TW_NO_FLASH_CURRENT_TWRP := true
+TW_INCLUDE_LPTOOLS := true
+TW_INCLUDE_LPDUMP := true
+TW_USE_DMCTL := true
+TW_INCLUDE_7ZA := true
 TW_INCLUDE_LIBRESETPROP := true
 TW_INCLUDE_RESETPROP := true
 TW_INCLUDE_RESETPROP_SOURCE := true
-TW_EXCLUDE_BASH := true
+TW_EXCLUDE_BASH := false
+TW_EXCLUDE_NANO := false
 TW_INCLUDE_ZSTD := true
 
 # TWRP file system
-TW_ENABLE_FS_COMPRESSION    := true
+TW_ENABLE_FS_COMPRESSION    := false
 TW_INCLUDE_FUSE_EXFAT       := true
 TW_INCLUDE_FUSE_NTFS        := true
 TW_INCLUDE_NTFS_3G          := true
@@ -172,19 +184,28 @@ TWRP_INCLUDE_LOGCAT := true
 # Fastbootd
 TW_INCLUDE_FASTBOOTD := true
 
-# Brightness
+# Brightness & Screen
 TW_DEFAULT_BRIGHTNESS := 2047
 TW_MAX_BRIGHTNESS := 4095
+TW_NO_SCREEN_BLANK := true
+TW_CUSTOM_BATTERY_PATH := "/sys/class/power_supply/battery"
 
 # Additional configs
 TW_EXCLUDE_APEX := true
 TW_FRAMERATE := 120
 TW_THEME := portrait_hdpi
-TW_USE_SERIALNO_PROPERTY_FOR_DEVICE_ID  := true
+TW_USE_SERIALNO_PROPERTY_FOR_DEVICE_ID := true
 TW_LOAD_VENDOR_BOOT_MODULES := true
 
-# StatusBar
-TW_STATUS_ICONS_ALIGN := center
+# Languages
+TW_EXTRA_LANGUAGES := true
+TW_DEFAULT_LANGUAGE := en
+
+# Display Cutout & StatusBar (Center punch-hole cutout padding)
+TW_Y_OFFSET := 80
+TW_H_OFFSET := -80
+TW_ROUND_SCREEN := true
+TW_STATUS_ICONS_ALIGN := left
 
 TW_DEVICE_VERSION := X6885
 

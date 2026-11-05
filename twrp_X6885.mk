@@ -4,10 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-# Inherit from Infinix-X6885 device
+
 $(call inherit-product, device/infinix/X6885/device.mk)
 
-# Inherit some common TWRP stuff.
 $(call inherit-product, vendor/twrp/config/common.mk)
 
 # Product Specifics

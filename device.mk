@@ -25,6 +25,7 @@ AB_OTA_UPDATER := true
 AB_OTA_PARTITIONS += \
     boot \
     dtbo \
+    init_boot \
     lk \
     odm \
     odm_dlkm \
@@ -32,6 +33,7 @@ AB_OTA_PARTITIONS += \
     system \
     system_dlkm \
     system_ext \
+    vbmeta \
     vbmeta_system \
     vbmeta_vendor \
     vendor \
@@ -44,6 +46,8 @@ PRODUCT_ENABLE_UFFD_GC := true
 
 # Dynamic Partitions
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
+PRODUCT_BUILD_SUPER_PARTITION := false
+PRODUCT_BUILD_SUPER_EMPTY_IMAGE := false
 
 # API
 PRODUCT_SHIPPING_API_LEVEL := 34

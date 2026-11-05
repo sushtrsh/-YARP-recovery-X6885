@@ -75,8 +75,6 @@ on post-fs
     # Create mcRegistry to store failure record
     mkdir /mnt/vendor/persist/mcRegistry 0771 system system
     mkdir /mnt/vendor/persist/mcRegistry/tee_logs 0771 system system
-    # keybox, paytrigger dan startPara sudah ada di persist asli. Jangan disentuh dari
-    # recovery supaya owner/mode aslinya (mis. root:system) tidak berubah.
     #mkdir /mnt/vendor/persist/keybox 0771 system system
     #mkdir /mnt/vendor/persist/paytrigger 0777 system system
     #mkdir /mnt/vendor/persist/startPara

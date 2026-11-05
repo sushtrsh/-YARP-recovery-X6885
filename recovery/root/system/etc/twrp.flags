@@ -21,6 +21,8 @@
 /nvcfg                 emmc   /dev/block/by-name/nvcfg                                            flags=display=nvcfg;backup
 /persist_image         emmc   /dev/block/by-name/persist                                          flags=display=persist;backup
 /persistent            emmc   /dev/block/by-name/frp                                              flags=display=persistent;backup
+/proinfo               emmc   /dev/block/by-name/proinfo                                          flags=display=proinfo;backup
+/transec               emmc   /dev/block/by-name/transec                                          flags=display=transec;backup
 
 # IMEI and modem related (mount backup)
 /nvdata                emmc   /dev/block/by-name/nvdata                                           flags=display=nvdata;backup
@@ -39,6 +41,11 @@
 /seccfg                emmc   /dev/block/by-name/seccfg                                           flags=display=seccfg
 /spmfw                 emmc   /dev/block/by-name/spmfw                                            flags=display=spmfw;slotselect
 /tee                   emmc   /dev/block/by-name/tee                                              flags=display=tee;slotselect;backup
+/dpm                   emmc   /dev/block/by-name/dpm                                              flags=display=dpm;slotselect;backup
+/scp                   emmc   /dev/block/by-name/scp                                              flags=display=scp;slotselect;backup
+/sspm                  emmc   /dev/block/by-name/sspm                                             flags=display=sspm;slotselect;backup
+/gz                    emmc   /dev/block/by-name/gz                                               flags=display=gz;slotselect;backup
+/tkv                   emmc   /dev/block/by-name/tkv                                              flags=display=tkv;slotselect;backup
 
 # Removable storage
 /external_sd           auto   /dev/block/mmcblk0p1 /dev/block/mmcblk1p1                                       flags=display=Micro_SD_Card;storage;wipeingui;removable;backup=0;fsflags="uid=1023,gid=1023"

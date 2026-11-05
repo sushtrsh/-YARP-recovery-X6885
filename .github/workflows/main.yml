@@ -186,11 +186,31 @@ jobs:
       if: ${{ !cancelled() }}
       run: |
         cd twrp
+        P="out/target/product/${{ github.event.inputs.DEVICE_NAME }}"
         ls -al out/target/product/ || true
         echo "--- Target Device out dir ---"
-        ls -al out/target/product/${{ github.event.inputs.DEVICE_NAME }}/ || true
+        ls -al "$P" || true
         mkdir -p "${{ steps.pwd.outputs.workspace-folder }}/artifacts"
-        find out/target/product/${{ github.event.inputs.DEVICE_NAME }}/ -maxdepth 1 -type f \( -name "*.img" -o -name "*.zip" \) -exec cp {} "${{ steps.pwd.outputs.workspace-folder }}/artifacts/" \;
+
+        if [ -f "$P/vendor_boot.img" ]; then
+          cp "$P/vendor_boot.img" "${{ steps.pwd.outputs.workspace-folder }}/artifacts/YARP-16.0-Unofficial-X6885.img"
+        elif [ -f "$P/vendorboot.img" ]; then
+          cp "$P/vendorboot.img" "${{ steps.pwd.outputs.workspace-folder }}/artifacts/YARP-16.0-Unofficial-X6885.img"
+        fi
+
+        find "$P" -maxdepth 1 -type f -name "*.zip" -exec cp {} "${{ steps.pwd.outputs.workspace-folder }}/artifacts/" \;
+
+        # Pastikan ramdisk dan vendor-bootconfig tidak masuk release
+        rm -f "${{ steps.pwd.outputs.workspace-folder }}/artifacts/"*ramdisk*
+        rm -f "${{ steps.pwd.outputs.workspace-folder }}/artifacts/"*bootconfig*
+
+        cd "${{ steps.pwd.outputs.workspace-folder }}/artifacts"
+        if [ -f "YARP-16.0-Unofficial-X6885.img" ]; then
+          sha256sum "YARP-16.0-Unofficial-X6885.img" > "YARP-16.0-Unofficial-X6885.img.sha256"
+        fi
+
+        echo "--- Final Artifacts for Release ---"
+        ls -lah
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
     - name: Upload to Release
@@ -200,13 +220,14 @@ jobs:
       with:
         files: |
           ${{ steps.pwd.outputs.workspace-folder }}/artifacts/*
-        name: TWRP-${{ github.event.inputs.DEVICE_NAME }}-${{ github.run_id }}
+        name: YARP-16.0-Unofficial-${{ github.event.inputs.DEVICE_NAME }}-${{ github.run_id }}
         tag_name: ${{ github.run_id }}
         body: |
           Manifest: ${{ github.event.inputs.MANIFEST_BRANCH }}
           Device: ${{ github.event.inputs.DEVICE_NAME }}
           Target: ${{ github.event.inputs.BUILD_TARGET }}
           Build Status: ${{ steps.build.outcome }}
+          Output: YARP-16.0-Unofficial-X6885.img
           Tested on Infinix X6885 (Android 16)
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -225,10 +246,10 @@ jobs:
         TARGET: ${{ github.event.inputs.BUILD_TARGET }}
       run: |
         if [ "$BUILD_STATUS" = "success" ] && [ "$RELEASE_STATUS" = "success" ]; then
-          TEXT=$(printf '✅ Build TWRP selesai\nDevice: %s\nManifest: %s\nTarget: %s\nRelease: %s' \
+          TEXT=$(printf '✅ Build YARP selesai\nDevice: %s\nManifest: %s\nTarget: %s\nRelease: %s' \
             "$DEVICE" "$MANIFEST" "$TARGET" "$RELEASE_URL")
         else
-          TEXT=$(printf '❌ Build TWRP gagal\nDevice: %s\nLog: %s' "$DEVICE" "$RUN_URL")
+          TEXT=$(printf '❌ Build YARP gagal\nDevice: %s\nLog: %s' "$DEVICE" "$RUN_URL")
         fi
         curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
           --data-urlencode "chat_id=${CHAT_ID}" \

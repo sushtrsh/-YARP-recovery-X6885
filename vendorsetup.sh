@@ -7,11 +7,15 @@
 
 export ALLOW_MISSING_DEPENDENCIES=true
 
-# Terapkan semua patch di patches/*.patch ke source tree (urut nama). Idempotent.
-#   01: build-system (bootstrap vendor ramdisk + zstd)
-#   02: bootable/recovery (jaga /vendor tetap ter-mount untuk Trustonic TEE)
 _dev_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _ws_root="$(cd "${_dev_dir}/../../.." && pwd)"
+
+
+if [ -d "${_ws_root}/external" ] && [ ! -d "${_ws_root}/external/gflags" ]; then
+    echo "[X6885] Menyiapkan dependensi external/gflags..."
+    git clone https://android.googlesource.com/platform/external/gflags/ -b android-12.1.0_r4 "${_ws_root}/external/gflags" >/dev/null 2>&1 || true
+fi
+
 if ! command -v patch >/dev/null 2>&1; then
     echo "[X6885] command 'patch' tidak ada"
     return 1
