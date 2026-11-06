@@ -13,8 +13,10 @@ on init
     # Generated mount fstab lives on writable recovery tmpfs.
     symlink /tmp/fstab /etc/fstab
     # Wi-Fi sockets directory for TWRP GUI2 backend
-    mkdir /tmp/recovery 0770 root root
-    mkdir /tmp/recovery/sockets 0770 root root
+    # Dimiliki user wifi: wpa_supplicant melepas root dan turun ke uid wifi sebelum mkdir
+    # ctrl_interface, jadi root:root 0770 menghasilkan 'mkdir ... Permission denied'.
+    mkdir /tmp/recovery 0770 wifi wifi
+    mkdir /tmp/recovery/sockets 0770 wifi wifi
     # dmsetup (Format Data) cannot mknod in recovery; point its control node at the real one.
     mkdir /dev/mapper 0755 root root
     symlink /dev/device-mapper /dev/mapper/control
@@ -89,6 +91,12 @@ on property:vendor.connsys.driver.ready=yes
     insmod /lib/modules/wifi/wmt_chrdev_wifi.ko
     insmod /lib/modules/wifi/mddp.ko
     insmod /lib/modules/wifi/wlan_drv_gen4m_6789.ko
+    # Di Android normal nvram_daemon yang set property ini. Di recovery nggak ada daemon-nya,
+    # jadi wlan_assistant nunggu selamanya, NVRAM nggak pernah dikirim ke driver, dan
+    # callback WMT (mtk_wcn_wlan_probe) nggak pernah terdaftar. nvdata sudah ke-mount di
+    # on property:fstab.additional=1 (file: /mnt/vendor/nvdata/APCFG/APRDEB/WIFI).
+    setprop vendor.service.nvram_init Ready
+    setprop vendor.service.wifi_nvram Ready
     start wlan_assistant
 
 on property:ro.vendor.trustonic.ready=true
