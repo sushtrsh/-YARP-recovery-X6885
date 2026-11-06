@@ -40,4 +40,6 @@ void vendor_load_properties() {
         set_property("ro.product." + part + "name", "X6885");
         set_property("ro.product." + part + "marketname", "Infinix HOT 60 Pro");
     }
+
+    set_property("ro.twrp.maintainer", "Made BY luv");
 }
