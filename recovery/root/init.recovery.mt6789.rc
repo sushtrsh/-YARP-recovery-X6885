@@ -32,10 +32,17 @@ on init
     insmod /lib/modules/wifi/mtk_low_battery_throttling.ko
     insmod /lib/modules/wifi/connadp.ko
     insmod /lib/modules/wifi/connfem.ko
-    # MTK WMT & WLAN Core
+    # MTK CCCI Modem Dependencies
+    insmod /lib/modules/wifi/rps_perf.ko
+    insmod /lib/modules/wifi/ccmni.ko
+    insmod /lib/modules/wifi/ccci_util_lib.ko
+    insmod /lib/modules/wifi/ccci_auxadc.ko
+    insmod /lib/modules/wifi/mtk_dynamic_loading_throttling.ko
+    insmod /lib/modules/wifi/mtk_mdpm.ko
+    insmod /lib/modules/wifi/mtk_pbm.ko
+    insmod /lib/modules/wifi/ccci_md_all.ko
+    # MTK WMT Core
     insmod /lib/modules/wifi/wmt_drv.ko
-    insmod /lib/modules/wifi/wmt_chrdev_wifi.ko
-    insmod /lib/modules/wifi/wlan_drv_gen4m_6789.ko
     export LD_LIBRARY_PATH /system/lib64:/vendor/lib64
 	setprop sys.usb.configfs 1
 	setprop sys.usb.controller "musb-hdrc"
@@ -68,7 +75,21 @@ on property:fstab.additional=1
     # main partitions. Opsi sama dengan fstab (flag fs_mgr wait/check/formattable tidak
     # berlaku; fsck tidak jalan).
     mount ext4 /dev/block/by-name/persist /mnt/vendor/persist nosuid nodev noatime noauto_da_alloc,commit=1,nodelalloc
+    # Mount nvdata and nvcfg for MediaTek Wi-Fi calibration and MAC address
+    mkdir /mnt/vendor/nvdata 0771 system system
+    mkdir /mnt/vendor/nvcfg 0771 system system
+    mount ext4 /dev/block/by-name/nvdata /mnt/vendor/nvdata nosuid nodev noatime
+    mount ext4 /dev/block/by-name/nvcfg /mnt/vendor/nvcfg nosuid nodev noatime
     start mobicore
+    # MTK Connectivity Firmware & Daemons
+    start wmt_loader
+    start wmt_launcher
+
+on property:vendor.connsys.driver.ready=yes
+    insmod /lib/modules/wifi/wmt_chrdev_wifi.ko
+    insmod /lib/modules/wifi/mddp.ko
+    insmod /lib/modules/wifi/wlan_drv_gen4m_6789.ko
+    start wlan_assistant
 
 on property:ro.vendor.trustonic.ready=true
     start vendor.gatekeeper-default
@@ -132,4 +153,27 @@ service wpa_supplicant /system/bin/wpa_supplicant \
     user root
     group root wifi
     seclabel u:r:recovery:s0
+
+# MTK Connectivity Daemons
+service wmt_loader /vendor/bin/wmt_loader
+    class early_hal
+    user root
+    group root
+    seclabel u:r:recovery:s0
+    oneshot
+    disabled
+
+service wmt_launcher /vendor/bin/wmt_launcher -p /vendor/firmware/ -o 1
+    class early_hal
+    user root
+    group root
+    seclabel u:r:recovery:s0
+    disabled
+
+service wlan_assistant /vendor/bin/wlan_assistant
+    class early_hal
+    user root
+    group root
+    seclabel u:r:recovery:s0
+    disabled
 
