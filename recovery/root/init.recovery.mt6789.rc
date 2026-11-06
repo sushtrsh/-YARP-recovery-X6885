@@ -24,11 +24,16 @@ on init
     insmod /lib/modules/touch/tui-common.ko
     insmod /lib/modules/touch/gt9896s.ko
     insmod /lib/modules/touch/gt9886.ko
-    # Wi-Fi kernel modules
+    # Subsystem dasar
+    insmod /lib/modules/wifi/rfkill.ko
     insmod /lib/modules/wifi/cfg80211.ko
-    insmod /lib/modules/wifi/wmt_drv.ko
-    insmod /lib/modules/wifi/connfem.ko
+    # MTK Connectivity Bus & Throttling
+    insmod /lib/modules/wifi/btif_drv.ko
+    insmod /lib/modules/wifi/mtk_low_battery_throttling.ko
     insmod /lib/modules/wifi/connadp.ko
+    insmod /lib/modules/wifi/connfem.ko
+    # MTK WMT & WLAN Core
+    insmod /lib/modules/wifi/wmt_drv.ko
     insmod /lib/modules/wifi/wmt_chrdev_wifi.ko
     insmod /lib/modules/wifi/wlan_drv_gen4m_6789.ko
     export LD_LIBRARY_PATH /system/lib64:/vendor/lib64
