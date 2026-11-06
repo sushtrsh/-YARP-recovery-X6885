@@ -103,10 +103,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES_DEBUG += \
     update_engine_client
 
-# Wi-Fi Packages
+# Wi-Fi Packages (TWRP recovery variant without AIDL)
 PRODUCT_PACKAGES += \
-    wpa_supplicant \
-    wpa_cli
+    wpa_supplicant_recovery \
+    wpa_cli_recovery
 
 PRODUCT_COPY_FILES += \
     $(DEVICE_PATH)/recovery/root/system/etc/wifi/wpa_supplicant.conf:system/etc/wifi/wpa_supplicant.conf
