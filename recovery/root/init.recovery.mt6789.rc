@@ -17,6 +17,9 @@ on init
     # ctrl_interface, jadi root:root 0770 menghasilkan 'mkdir ... Permission denied'.
     mkdir /tmp/recovery 0770 wifi wifi
     mkdir /tmp/recovery/sockets 0770 wifi wifi
+    # Kernel default ping_group_range "1 0" (kosong): toybox ping (soket ICMP datagram)
+    # gagal "Permission denied" walau root, jadi Test network di GUI selalu failed.
+    write /proc/sys/net/ipv4/ping_group_range "0 2147483647"
     # dmsetup (Format Data) cannot mknod in recovery; point its control node at the real one.
     mkdir /dev/mapper 0755 root root
     symlink /dev/device-mapper /dev/mapper/control
@@ -98,6 +101,10 @@ on property:vendor.connsys.driver.ready=yes
     setprop vendor.service.nvram_init Ready
     setprop vendor.service.wifi_nvram Ready
     start wlan_assistant
+    # GUI TWRP cuma ctl.start wpa_supplicant, nggak pernah nyalain Wi-Fi lewat /dev/wmtWifi,
+    # jadi wlan0 nggak ada dan supplicant (-iwlan0) nggak punya interface. Nyalain di sini,
+    # diulang sampai wlan0 muncul (callback WMT baru terdaftar setelah assistant nulis NVRAM).
+    start wifi_poweron
 
 on property:ro.vendor.trustonic.ready=true
     start vendor.gatekeeper-default
@@ -178,10 +185,16 @@ service wmt_launcher /vendor/bin/wmt_launcher -p /vendor/firmware/ -o 1
     seclabel u:r:recovery:s0
     disabled
 
+service wifi_poweron /system/bin/sh -c "for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do [ -d /sys/class/net/wlan0 ] && break; sleep 1; echo 1 > /dev/wmtWifi; done"
+    user root
+    group root
+    seclabel u:r:recovery:s0
+    oneshot
+    disabled
+
 service wlan_assistant /vendor/bin/wlan_assistant
     class early_hal
     user root
     group root
     seclabel u:r:recovery:s0
     disabled
-
