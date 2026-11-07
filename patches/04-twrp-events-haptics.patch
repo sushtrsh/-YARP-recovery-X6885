@@ -1,16 +1,15 @@
-diff --git a/bootable/recovery/twrpminui/events.cpp b/bootable/recovery/twrpminui/events.cpp
-index b98d4cd..0d34257 100644
---- a/bootable/recovery/twrpminui/events.cpp
-+++ b/bootable/recovery/twrpminui/events.cpp
-@@ -33,6 +33,7 @@
- #include <string.h>
+diff --git a/bootable/recovery/twrpminui/haptics.cpp b/bootable/recovery/twrpminui/haptics.cpp
+--- a/bootable/recovery/twrpminui/haptics.cpp
++++ b/bootable/recovery/twrpminui/haptics.cpp
+@@ -34,6 +34,7 @@
  #include <fstream>
  #include <mutex>
+ #include <atomic>
 +#include <thread>
  #include "force_feedback.h"
  #ifdef USE_QTI_AIDL_HAPTICS_FIX_OFF
  #include <thread>
-@@ -72,6 +73,9 @@ static std::atomic_int vib_on_count = 0;
+@@ -69,6 +70,9 @@
  
  #define LEDS_HAPTICS_DURATION_FILE	"/sys/class/leds/vibrator/duration"
  #define LEDS_HAPTICS_ACTIVATE_FILE	"/sys/class/leds/vibrator/activate"
@@ -18,9 +17,9 @@ index b98d4cd..0d34257 100644
 +#define LEDS_HAPTICS_SINGLE_ACTIVATE_FILE	"/sys/class/leds/vibrator_single/activate"
 +#define LEDS_HAPTICS_BRIGHTNESS_FILE	"/sys/class/leds/vibrator/brightness"
  
- #ifndef SYN_REPORT
- #define SYN_REPORT          0x00
-@@ -270,11 +274,21 @@ int vibrate(int timeout_ms)
+ static int write_to_file(const std::string& fn, const std::string& line) {
+ 	FILE *file;
+@@ -138,11 +142,21 @@
          write_to_file(VIBRATOR_TIMEOUT_FILE, tout);
      }
  #else
@@ -43,7 +42,7 @@ index b98d4cd..0d34257 100644
      } else {
          return twrpminui::play_force_feedback(timeout_ms);
      }
-@@ -299,7 +313,9 @@ int haptics_available()
+@@ -167,7 +181,9 @@
      return access(VIBRATOR_TIMEOUT_FILE, W_OK) == 0;
  #else
      return twrpminui::force_feedback_available() ||
