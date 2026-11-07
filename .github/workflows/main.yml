@@ -11,6 +11,10 @@ on:
         description: 'MANIFEST_BRANCH'
         required: true
         default: 'twrp-16.0'
+      RECOVERY_COMMIT:
+        description: 'Pin bootable/recovery ke commit ini (kosong = ikut HEAD)'
+        required: false
+        default: '9734c17'
       DEVICE_TREE_URL:
         description: 'DEVICE_TREE_URL'
         required: true
@@ -121,6 +125,27 @@ jobs:
         ~/bin/repo sync hardware/google/pixel || true
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
+    - name: Pin bootable/recovery
+      if: ${{ github.event.inputs.RECOVERY_COMMIT != '' }}
+      env:
+        RECOVERY_COMMIT: ${{ github.event.inputs.RECOVERY_COMMIT }}
+        BRANCH: ${{ github.event.inputs.MANIFEST_BRANCH }}
+      run: |
+        cd twrp/bootable/recovery
+        REMOTE=$(git remote | head -1)
+        echo "remote: $REMOTE"
+        # repo init --depth=1 bikin history cuma 1 commit, jadi ditarik penuh dulu
+        git fetch --unshallow "$REMOTE" || git fetch "$REMOTE"
+        if ! git cat-file -e "${RECOVERY_COMMIT}^{commit}" 2>/dev/null; then
+          echo "::error::Commit $RECOVERY_COMMIT tidak ditemukan di remote $REMOTE (cek branch/PR)"
+          exit 1
+        fi
+        git checkout -q "$RECOVERY_COMMIT"
+        git log -1 --format='bootable/recovery pinned: %H %cd'
+        echo "--- commit yang TIDAK ikut (lebih baru dari pin) ---"
+        git log --oneline HEAD.."$REMOTE/$BRANCH" 2>/dev/null | head -30 || true
+      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
+
     - name: Restore ccache
       if: github.event.inputs.USE_CCACHE == 'true'
       id: ccache
@@ -148,6 +173,7 @@ jobs:
       id: build
       run: |
         cd twrp
+        git -C bootable/recovery log -1 --format='BUILD pakai bootable/recovery: %H %cd'
         set +e
         source build/envsetup.sh
         source ${{ github.event.inputs.DEVICE_PATH }}/vendorsetup.sh
@@ -234,6 +260,7 @@ jobs:
         tag_name: ${{ github.run_id }}
         body: |
           Manifest: ${{ github.event.inputs.MANIFEST_BRANCH }}
+          Recovery pin: ${{ github.event.inputs.RECOVERY_COMMIT || 'HEAD' }}
           Device: ${{ github.event.inputs.DEVICE_NAME }}
           Target: ${{ github.event.inputs.BUILD_TARGET }}
           Build Status: ${{ steps.build.outcome }}
