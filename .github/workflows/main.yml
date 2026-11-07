@@ -12,9 +12,13 @@ on:
         required: true
         default: 'twrp-16.0'
       RECOVERY_COMMIT:
-        description: 'Pin bootable/recovery ke commit ini (kosong = ikut HEAD)'
+        description: 'Pin bootable/recovery, (kosong = ikut HEAD)'
         required: false
-        default: '9734c17'
+        default: '9734c17207678342e97779a3bde6cf75f6fa83ff'
+      BUILD_COMMIT:
+        description: 'Pin build/make (android_build), (kosong = ikut HEAD)'
+        required: false
+        default: '6262fe1107564663434ec257d275bc0f9573b976'
       DEVICE_TREE_URL:
         description: 'DEVICE_TREE_URL'
         required: true
@@ -99,9 +103,26 @@ jobs:
           ${{ secrets.SSH_PRIVATE_KEY }}
 
     - name: Sync TWRP sources
+      env:
+        RECOVERY_SHA: ${{ github.event.inputs.RECOVERY_COMMIT }}
+        BUILD_SHA: ${{ github.event.inputs.BUILD_COMMIT }}
       run: |
         cd twrp
         ~/bin/repo init --depth=1 -u ${{ github.event.inputs.MANIFEST_URL }} -b ${{ github.event.inputs.MANIFEST_BRANCH }}
+        if [ -n "$RECOVERY_SHA" ] || [ -n "$BUILD_SHA" ]; then
+          mkdir -p .repo/local_manifests
+          {
+            echo '<manifest>'
+            if [ -n "$RECOVERY_SHA" ]; then
+              echo "  <extend-project name=\"android_bootable_recovery\" path=\"bootable/recovery\" revision=\"$RECOVERY_SHA\" upstream=\"twrp-16.0\" />"
+            fi
+            if [ -n "$BUILD_SHA" ]; then
+              echo "  <extend-project name=\"android_build\" path=\"build/make\" revision=\"$BUILD_SHA\" upstream=\"twrp-16.0\" />"
+            fi
+            echo '</manifest>'
+          } > .repo/local_manifests/pin.xml
+          cat .repo/local_manifests/pin.xml
+        fi
         ~/bin/repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags --optimized-fetch --prune
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
@@ -123,27 +144,6 @@ jobs:
         ~/bin/repo sync external/guava || true
         ~/bin/repo sync hardware/google/interfaces || true
         ~/bin/repo sync hardware/google/pixel || true
-      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
-
-    - name: Pin bootable/recovery
-      if: ${{ github.event.inputs.RECOVERY_COMMIT != '' }}
-      env:
-        RECOVERY_COMMIT: ${{ github.event.inputs.RECOVERY_COMMIT }}
-        BRANCH: ${{ github.event.inputs.MANIFEST_BRANCH }}
-      run: |
-        cd twrp/bootable/recovery
-        REMOTE=$(git remote | head -1)
-        echo "remote: $REMOTE"
-        # repo init --depth=1 bikin history cuma 1 commit, jadi ditarik penuh dulu
-        git fetch --unshallow "$REMOTE" || git fetch "$REMOTE"
-        if ! git cat-file -e "${RECOVERY_COMMIT}^{commit}" 2>/dev/null; then
-          echo "::error::Commit $RECOVERY_COMMIT tidak ditemukan di remote $REMOTE (cek branch/PR)"
-          exit 1
-        fi
-        git checkout -q "$RECOVERY_COMMIT"
-        git log -1 --format='bootable/recovery pinned: %H %cd'
-        echo "--- commit yang TIDAK ikut (lebih baru dari pin) ---"
-        git log --oneline HEAD.."$REMOTE/$BRANCH" 2>/dev/null | head -30 || true
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
     - name: Restore ccache
@@ -174,6 +174,7 @@ jobs:
       run: |
         cd twrp
         git -C bootable/recovery log -1 --format='BUILD pakai bootable/recovery: %H %cd'
+        git -C build/make log -1 --format='BUILD pakai build/make: %H %cd'
         set +e
         source build/envsetup.sh
         source ${{ github.event.inputs.DEVICE_PATH }}/vendorsetup.sh
@@ -261,6 +262,7 @@ jobs:
         body: |
           Manifest: ${{ github.event.inputs.MANIFEST_BRANCH }}
           Recovery pin: ${{ github.event.inputs.RECOVERY_COMMIT || 'HEAD' }}
+          Build pin: ${{ github.event.inputs.BUILD_COMMIT || 'HEAD' }}
           Device: ${{ github.event.inputs.DEVICE_NAME }}
           Target: ${{ github.event.inputs.BUILD_TARGET }}
           Build Status: ${{ steps.build.outcome }}
