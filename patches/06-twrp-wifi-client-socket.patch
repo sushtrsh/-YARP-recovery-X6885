@@ -1,0 +1,14 @@
+--- a/bootable/recovery/gui2/backend/twrp_wifi_backend.cpp
++++ b/bootable/recovery/gui2/backend/twrp_wifi_backend.cpp
+@@ -35,7 +35,10 @@
+ }
+ 
+ std::string wpa(const std::string& arguments) {
+-  return run(std::string("wpa_cli -i") + kInterface + " -p" + kControlDir + " " + arguments);
++  // -s: socket klien wpa_cli juga di kControlDir. Default-nya /data/misc/wifi/sockets
++  // (wifi:wifi 0770) menghasilkan "Permission denied" di recovery.
++  return run(std::string("wpa_cli -i") + kInterface + " -p" + kControlDir + " -s " + kControlDir +
++             " " + arguments);
+ }
+ 
+ std::string trimmed(std::string value) {
