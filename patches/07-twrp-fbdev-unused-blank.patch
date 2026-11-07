@@ -1,0 +1,12 @@
+diff --git a/bootable/recovery/twrpminui/graphics_fbdev.cpp b/bootable/recovery/twrpminui/graphics_fbdev.cpp
+--- a/bootable/recovery/twrpminui/graphics_fbdev.cpp
++++ b/bootable/recovery/twrpminui/graphics_fbdev.cpp
+@@ -42,7 +42,7 @@
+ }
+ 
+ // TWRP: brightness fallback and secondary brightness path (2948b6f3).
+-void MinuiBackendFbdev::Blank(bool blank) {
++void MinuiBackendFbdev::Blank([[maybe_unused]] bool blank) {
+ #if defined(TW_NO_SCREEN_BLANK) && defined(TW_BRIGHTNESS_PATH) && defined(TW_MAX_BRIGHTNESS)
+     int fd;
+     char brightness[4];
