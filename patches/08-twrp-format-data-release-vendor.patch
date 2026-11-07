@@ -1,0 +1,58 @@
+--- a/bootable/recovery/partitionmanager.cpp
++++ b/bootable/recovery/partitionmanager.cpp
+@@ -1647,6 +1647,26 @@
+   return false;
+ }
+ 
++// Format Data has to unmap every dynamic partition (CheckPendingMerges), but devices that set
++// ro.twrp.keep_vendor_mounted keep /vendor busy: the TEE and Wi-Fi daemons run from it. Ask init
++// (init.recovery.*.rc, on property:twrp.prep_format=1) to stop them and release /vendor first.
++static void ReleaseVendorForFormat() {
++  if (!android::base::GetBoolProperty("ro.twrp.keep_vendor_mounted", false)) return;
++
++  LOGINFO("Releasing /vendor before Format Data.\n");
++  android::base::SetProperty("twrp.prep_format.done", "0");
++  // Go through 0 so the trigger fires again on a second Format Data in the same boot.
++  android::base::SetProperty("twrp.prep_format", "0");
++  if (!android::base::SetProperty("twrp.prep_format", "1")) {
++    LOGERR("Unable to set twrp.prep_format.\n");
++    return;
++  }
++  for (int i = 0; i < 100 && !android::base::GetBoolProperty("twrp.prep_format.done", false); i++)
++    usleep(100000);
++  if (!android::base::GetBoolProperty("twrp.prep_format.done", false))
++    LOGERR("Timed out waiting for init to release /vendor.\n");
++}
++
+ int TWPartitionManager::FormatData() {
+   TWPartition* dat = FindPartitionByPath("/data");
+   TWPartition* metadata = FindPartitionByPath("/metadata");
+@@ -1654,6 +1674,7 @@
+ 
+   if (dat) {
+     int ret = false;
++    ReleaseVendorForFormat();
+     if (android::base::GetBoolProperty("ro.virtual_ab.enabled", false)) {
+ #ifndef TW_EXCLUDE_APEX
+       TwrpApex::Unmount();
+--- a/bootable/recovery/partition.cpp
++++ b/bootable/recovery/partition.cpp
+@@ -1951,7 +1951,17 @@
+   decrypted_block_device_ = "";
+   is_decrypted_ = false;
+   is_encrypted_ = false;
+-  if (Wipe(fstab_file_system_)) {
++  // Removing encryption has to really format the raw device: rm -rf needs a mountable
++  // filesystem, which is gone once the metadata-encryption mapping has been deleted.
++  int saved_rm_rf = 0;
++  DataManager::GetValue(TW_RM_RF_VAR, saved_rm_rf);
++  const bool saved_use_rm_rf = use_rm_rf_;
++  DataManager::SetValue(TW_RM_RF_VAR, 0);
++  use_rm_rf_ = false;
++  const bool wiped = Wipe(fstab_file_system_);
++  DataManager::SetValue(TW_RM_RF_VAR, saved_rm_rf);
++  use_rm_rf_ = saved_use_rm_rf;
++  if (wiped) {
+     has_data_media_ = save_data_media;
+     DataManager::SetValue(TW_IS_ENCRYPTED, 0);
+     gui2_console::info("format_data_msg");
