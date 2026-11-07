@@ -1,8 +1,7 @@
 diff --git a/bootable/recovery/gui2/backend/twrp_background_backend.cpp b/bootable/recovery/gui2/backend/twrp_background_backend.cpp
-index 53137ac..0764fc0 100644
 --- a/bootable/recovery/gui2/backend/twrp_background_backend.cpp
 +++ b/bootable/recovery/gui2/backend/twrp_background_backend.cpp
-@@ -159,10 +159,18 @@ void twrp_background_backend::stop() {
+@@ -159,10 +159,18 @@
  
  void twrp_background_backend::uevent_loop() {
    auto next_snapshot = std::chrono::steady_clock::now();
@@ -21,7 +20,7 @@ index 53137ac..0764fc0 100644
        PartitionManager.RefreshPartitionListSnapshots();
        next_snapshot = now + std::chrono::milliseconds(250);
      }
-@@ -183,8 +191,10 @@ void twrp_background_backend::uevent_loop() {
+@@ -183,8 +191,10 @@
      }
      if (ready == 0) continue;
      // Drain POLLERR too, so ReadUevent can detect overflow and resync.
@@ -35,10 +34,9 @@ index 53137ac..0764fc0 100644
        LOGINFO("uevent socket is not open, disabling hotplug polling\n");
        listen_uevent = false;
 diff --git a/bootable/recovery/partitionmanager.cpp b/bootable/recovery/partitionmanager.cpp
-index b7c7e4b..52cbb9b 100755
 --- a/bootable/recovery/partitionmanager.cpp
 +++ b/bootable/recovery/partitionmanager.cpp
-@@ -3293,8 +3302,9 @@ void TWPartitionManager::ResyncUeventDevices() {
+@@ -3302,8 +3302,9 @@
    }
  }
  
@@ -49,7 +47,7 @@ index b7c7e4b..52cbb9b 100755
    bool drained = false;
    for (int count = 0; count < 64; ++count) {
      char buf[4096];
-@@ -3302,6 +3312,7 @@ void TWPartitionManager::ReadUevent(bool force_resync) {
+@@ -3311,6 +3312,7 @@
      if (len < 0) {
        if (errno == ENOBUFS) {
          uevent_overrun_ = true;
@@ -57,7 +55,7 @@ index b7c7e4b..52cbb9b 100755
          continue;
        }
        drained = errno == EAGAIN || errno == EWOULDBLOCK;
-@@ -3311,11 +3322,14 @@ void TWPartitionManager::ReadUevent(bool force_resync) {
+@@ -3320,11 +3322,14 @@
      if (len == 0) { drained = true; break; }
      if (len >= static_cast<decltype(len)>(sizeof(buf))) {
        uevent_overrun_ = true;
@@ -73,7 +71,7 @@ index b7c7e4b..52cbb9b 100755
    }
    // Coalesce overflow within a burst, but sustained input cannot postpone a
    // correction forever: at most four bounded batches precede a resync.
-@@ -3323,7 +3337,13 @@ void TWPartitionManager::ReadUevent(bool force_resync) {
+@@ -3332,7 +3337,13 @@
      uevent_overrun_ = false;
      uevent_dirty_batches_ = 0;
      ResyncUeventDevices();
@@ -88,14 +86,13 @@ index b7c7e4b..52cbb9b 100755
  
  void TWPartitionManager::CloseUevent() {
 diff --git a/bootable/recovery/partitions.hpp b/bootable/recovery/partitions.hpp
-index 3dd126f..faede22 100755
 --- a/bootable/recovery/partitions.hpp
 +++ b/bootable/recovery/partitions.hpp
-@@ -886,7 +886,8 @@ public:
+@@ -886,7 +886,8 @@
    static UeventBlockData GetEventBlockValues(char* buf, int len);
  
    // Drains hotplug events; GUI2 calls this from its storage worker.
--  // Returns true if add/change or lost events need delayed device-node retries.
+-  void ReadUevent(bool force_resync = false);
 +  // Returns true if add/change or lost events need delayed device-node retries.
 +  bool ReadUevent(bool force_resync = false);
  
