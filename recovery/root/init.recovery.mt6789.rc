@@ -110,6 +110,25 @@ on property:ro.vendor.trustonic.ready=true
     start vendor.gatekeeper-default
     start vendor.keymint-trustonic
 
+# Dipicu TWRP (patches/08) sebelum Format Data: lepaskan /vendor supaya dynamic partition bisa di-unmap.
+# Tidak pakai exec di sini (exec di dalam action bikin init membuang command sesudahnya).
+on property:twrp.prep_format=1
+    stop mobicore
+    stop vendor.keymint-trustonic
+    stop vendor.gatekeeper-default
+    stop wpa_supplicant
+    stop wlan_assistant
+    stop wmt_launcher
+    stop wmt_loader
+    start prep_format
+
+service prep_format /system/bin/sh /system/etc/prep_format.sh
+    user root
+    group root
+    seclabel u:r:recovery:s0
+    oneshot
+    disabled
+
 on property:servicemanager.ready=true
     setprop sys.boot_completed 1
 
