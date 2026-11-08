@@ -36,7 +36,7 @@ void vendor_load_properties() {
         set_property("ro.product." + part + "brand", "Infinix");
         set_property("ro.product." + part + "device", "Infinix-X6885");
         set_property("ro.product." + part + "manufacturer", "INFINIX");
-        set_property("ro.product." + part + "model", "Infinix X6885");
+        set_property("ro.product." + part + "model", "Infinix X6885, made by sushtrsh");
         set_property("ro.product." + part + "name", "X6885");
         set_property("ro.product." + part + "marketname", "Infinix HOT 60 Pro");
     }
