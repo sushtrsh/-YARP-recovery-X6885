@@ -12,13 +12,31 @@ on:
         required: true
         default: 'twrp-16.0'
       RECOVERY_COMMIT:
-        description: 'Pin bootable/recovery, (kosong = ikut HEAD)'
-        required: false
+        description: 'Pin bootable/recovery (HEAD = tanpa pin, custom = isi SHA di bawah)'
+        required: true
         default: '9734c17207678342e97779a3bde6cf75f6fa83ff'
-      BUILD_COMMIT:
-        description: 'Pin build/make (android_build), (kosong = ikut HEAD)'
+        type: choice
+        options:
+          - '9734c17207678342e97779a3bde6cf75f6fa83ff'
+          - HEAD
+          - custom
+      RECOVERY_COMMIT_CUSTOM:
+        description: 'SHA custom bootable/recovery (dipakai kalau pilih custom)'
         required: false
+        default: ''
+      BUILD_COMMIT:
+        description: 'Pin build/make (HEAD = tanpa pin, custom = isi SHA di bawah)'
+        required: true
         default: '6262fe1107564663434ec257d275bc0f9573b976'
+        type: choice
+        options:
+          - '6262fe1107564663434ec257d275bc0f9573b976'
+          - HEAD
+          - custom
+      BUILD_COMMIT_CUSTOM:
+        description: 'SHA custom build/make (dipakai kalau pilih custom)'
+        required: false
+        default: ''
       DEVICE_TREE_URL:
         description: 'DEVICE_TREE_URL'
         required: true
@@ -106,7 +124,13 @@ jobs:
       env:
         RECOVERY_SHA: ${{ github.event.inputs.RECOVERY_COMMIT }}
         BUILD_SHA: ${{ github.event.inputs.BUILD_COMMIT }}
+        RECOVERY_CUSTOM: ${{ github.event.inputs.RECOVERY_COMMIT_CUSTOM }}
+        BUILD_CUSTOM: ${{ github.event.inputs.BUILD_COMMIT_CUSTOM }}
       run: |
+        [ "$RECOVERY_SHA" = "HEAD" ] && RECOVERY_SHA=""
+        [ "$BUILD_SHA" = "HEAD" ] && BUILD_SHA=""
+        [ "$RECOVERY_SHA" = "custom" ] && RECOVERY_SHA="$RECOVERY_CUSTOM"
+        [ "$BUILD_SHA" = "custom" ] && BUILD_SHA="$BUILD_CUSTOM"
         cd twrp
         ~/bin/repo init --depth=1 -u ${{ github.event.inputs.MANIFEST_URL }} -b ${{ github.event.inputs.MANIFEST_BRANCH }}
         if [ -n "$RECOVERY_SHA" ] || [ -n "$BUILD_SHA" ]; then
