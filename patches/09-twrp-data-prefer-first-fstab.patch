@@ -1,0 +1,20 @@
+--- a/bootable/recovery/partitionmanager.cpp
++++ b/bootable/recovery/partitionmanager.cpp
+@@ -386,6 +386,17 @@
+     if (parse_userdata && entry.mount_point != "/metadata" && entry.mount_point != "/data")
+       continue;
+ 
++    // Stock MTK fstabs list /data twice (f2fs, then an ext4 fallback), exactly as fs_mgr
++    // expects. The first entry is the preferred one: letting the last one replace it made
++    // Format Data build ext4 on a device whose /data is f2fs.
++    if (parse_userdata && std::any_of(pending.begin(), pending.end(), [&](const auto& staged) {
++          return staged->mount_point_ == entry.mount_point;
++        })) {
++      LOGINFO("Ignoring fallback fstab entry for '%s' (%s)\n", entry.mount_point.c_str(),
++              entry.fs_type.c_str());
++      continue;
++    }
++
+     // Rebuild the fstab2 line with the flag columns verbatim so
+     // ProcessFstabLine sees the original tokens.
+     const std::string line = entry.blk_device + ' ' + entry.mount_point + ' ' +
