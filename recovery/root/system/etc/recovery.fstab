@@ -35,5 +35,8 @@ tr_manifest             /tr_manifest    auto        ro                          
 # Use tranfs as cache
 /dev/block/by-name/tranfs    /cache      ext4    noatime,nosuid,nodev,discard                                   wait,check,formattable
 
+# Micro SD (hotplug lewat uevent: path sysfs, bukan node /dev/block statis)
+/devices/platform/soc/11240000.mmc*     /external_sd     auto    nosuid,nodev                                                    wait,voldmanaged=sdcard1:auto
+
 # USB OTG
 /devices/platform/soc/mt_usb*     /usbotg     auto    nosuid,nodev                                                    wait,voldmanaged=usbotg:auto
