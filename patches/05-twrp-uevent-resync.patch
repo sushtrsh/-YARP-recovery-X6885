@@ -1,0 +1,80 @@
+--- a/bootable/recovery/partitionmanager.cpp
++++ b/bootable/recovery/partitionmanager.cpp
+@@ -3239,7 +3239,36 @@
+   return ret;
+ }
+ 
++void TWPartitionManager::RefreshFixedRemovableDevices() {
++  twrp_operation_executor::guard transaction(twrp_operation_executor::instance().mutex());
++  for (TWPartition* part : partitions_) {
++    // Sysfs/wildcard entries are handled by HandleUevent/ResyncUeventDevices.
++    if (!part->removable_ || part->is_sub_partition_ || !part->sysfs_entry_.empty() ||
++        part->wildcard_block_device_ || part->is_adopted_storage_)
++      continue;
++    const bool was_present = part->is_present_;
++    const std::string was_device = part->actual_block_device_;
++    part->FindActualBlockDevice();
++    const bool changed = was_present != part->is_present_ || was_device != part->actual_block_device_;
++    if (was_present && changed) {
++      LOGINFO("%s changed or was removed (%s)\n", part->mount_point_.c_str(), was_device.c_str());
++      part->Unmount(false);
++      part->size_ = part->used_ = part->free_ = 0;
++    }
++    // Also retry while present but never mounted: the node can show up before
++    // the card has finished probing.
++    if (part->is_present_ && (changed || (!part->IsMounted() && part->size_ == 0))) {
++      LOGINFO("%s appeared on %s\n", part->mount_point_.c_str(), part->actual_block_device_.c_str());
++      part->UpdateSize(false, false, true);
++    }
++  }
++}
++
+ void TWPartitionManager::ProcessPendingUeventDevices() {
++  if (fixed_removable_retry_ > 0) {
++    --fixed_removable_retry_;
++    RefreshFixedRemovableDevices();
++  }
+   if (uevent_resync_pending_) {
+     ResyncUeventDevices();
+     return;
+@@ -3261,6 +3290,7 @@
+   uevent_resync_pending_ = false;
+   uevent_overrun_ = false;
+   uevent_dirty_batches_ = 0;
++  fixed_removable_retry_ = 0;
+ }
+ 
+ void TWPartitionManager::ResyncUeventDevices() {
+@@ -3370,6 +3400,8 @@
+     uevent_overrun_ = false;
+     uevent_dirty_batches_ = 0;
+     ResyncUeventDevices();
++    RefreshFixedRemovableDevices();
++    fixed_removable_retry_ = 8;  // ~2 s of retries, see ProcessPendingUeventDevices()
+   }
+ }
+ 
+--- a/bootable/recovery/partitions.hpp
++++ b/bootable/recovery/partitions.hpp
+@@ -892,6 +892,11 @@
+   void ProcessPendingUeventDevices();
+   void ResetPendingUeventDevices();
+ 
++  // Removable storage with fixed /dev/block nodes (e.g. /external_sd on
++  // mmcblk0p1) has no sysfs entry, so HandleUevent never sees it. Re-check
++  // those nodes after a block hotplug event instead of waiting for a reboot.
++  void RefreshFixedRemovableDevices();
++
+   // Reconciles removable devices with sysfs after dropped hotplug events.
+   void ResyncUeventDevices();
+ 
+@@ -1021,6 +1026,9 @@
+   // Set when the netlink queue dropped an event: removable children may be stale.
+   bool uevent_overrun_ = false;
+   unsigned uevent_dirty_batches_ = 0;
++  // Snapshot ticks (250 ms) left to re-check fixed-node removables: ueventd can
++  // create /dev/block nodes after the netlink event has already been drained.
++  unsigned fixed_removable_retry_ = 0;
+   // Current Active Slot (A or B) for display purposes
+   std::string active_slot_display_;
+   // List of FBE users
