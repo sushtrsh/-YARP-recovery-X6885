@@ -11,13 +11,20 @@ on:
         description: 'MANIFEST_BRANCH'
         required: true
         default: 'twrp-16.0'
-      RECOVERY_COMMIT:
-        description: 'Pin bootable/recovery (HEAD = tanpa pin, custom = isi SHA di bawah)'
+      RECOVERY_REPO_URL:
+        description: 'URL Repo bootable/recovery (fork repo kamu)'
         required: true
-        default: '9734c17207678342e97779a3bde6cf75f6fa83ff'
+        default: 'https://github.com/sushtrsh/android_bootable_recovery'
+      RECOVERY_REPO_BRANCH:
+        description: 'Branch bootable/recovery'
+        required: true
+        default: 'twrp-16.0'
+      RECOVERY_COMMIT:
+        description: 'Pin commit bootable/recovery (HEAD = commit terbaru, custom = isi SHA)'
+        required: true
+        default: 'HEAD'
         type: choice
         options:
-          - '9734c17207678342e97779a3bde6cf75f6fa83ff'
           - HEAD
           - custom
       RECOVERY_COMMIT_CUSTOM:
@@ -44,7 +51,7 @@ on:
       DEVICE_TREE_BRANCH:
         description: 'DEVICE_TREE_BRANCH'
         required: true
-        default: 'main'
+        default: 'test_X6885'
       DEVICE_PATH:
         description: 'DEVICE_PATH'
         required: true
@@ -122,9 +129,11 @@ jobs:
 
     - name: Sync TWRP sources
       env:
+        RECOVERY_URL: ${{ github.event.inputs.RECOVERY_REPO_URL }}
+        RECOVERY_BRANCH: ${{ github.event.inputs.RECOVERY_REPO_BRANCH }}
         RECOVERY_SHA: ${{ github.event.inputs.RECOVERY_COMMIT }}
-        BUILD_SHA: ${{ github.event.inputs.BUILD_COMMIT }}
         RECOVERY_CUSTOM: ${{ github.event.inputs.RECOVERY_COMMIT_CUSTOM }}
+        BUILD_SHA: ${{ github.event.inputs.BUILD_COMMIT }}
         BUILD_CUSTOM: ${{ github.event.inputs.BUILD_COMMIT_CUSTOM }}
       run: |
         [ "$RECOVERY_SHA" = "HEAD" ] && RECOVERY_SHA=""
@@ -133,21 +142,26 @@ jobs:
         [ "$BUILD_SHA" = "custom" ] && BUILD_SHA="$BUILD_CUSTOM"
         cd twrp
         ~/bin/repo init --depth=1 -u ${{ github.event.inputs.MANIFEST_URL }} -b ${{ github.event.inputs.MANIFEST_BRANCH }}
-        if [ -n "$RECOVERY_SHA" ] || [ -n "$BUILD_SHA" ]; then
+        if [ -n "$BUILD_SHA" ]; then
           mkdir -p .repo/local_manifests
           {
             echo '<manifest>'
-            if [ -n "$RECOVERY_SHA" ]; then
-              echo "  <extend-project name=\"android_bootable_recovery\" path=\"bootable/recovery\" revision=\"$RECOVERY_SHA\" upstream=\"twrp-16.0\" />"
-            fi
-            if [ -n "$BUILD_SHA" ]; then
-              echo "  <extend-project name=\"android_build\" path=\"build/make\" revision=\"$BUILD_SHA\" upstream=\"twrp-16.0\" />"
-            fi
+            echo "  <extend-project name=\"android_build\" path=\"build/make\" revision=\"$BUILD_SHA\" upstream=\"twrp-16.0\" />"
             echo '</manifest>'
           } > .repo/local_manifests/pin.xml
           cat .repo/local_manifests/pin.xml
         fi
         ~/bin/repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags --optimized-fetch --prune
+
+        echo "==> Mengganti bootable/recovery dengan fork repo: $RECOVERY_URL (branch: $RECOVERY_BRANCH)"
+        rm -rf bootable/recovery
+        git clone "$RECOVERY_URL" -b "$RECOVERY_BRANCH" bootable/recovery
+        if [ -n "$RECOVERY_SHA" ]; then
+          echo "==> Checkout commit spesifik: $RECOVERY_SHA"
+          git -C bootable/recovery checkout "$RECOVERY_SHA"
+        fi
+        echo "==> Info commit bootable/recovery:"
+        git -C bootable/recovery log -1 --oneline
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
     - name: Clone device tree
