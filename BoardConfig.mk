@@ -161,7 +161,6 @@ TW_ENABLE_ALL_PARTITION_TOOLS := true
 TW_INCLUDE_REPACKTOOLS := false
 TW_NO_FLASH_CURRENT_TWRP := true
 TW_INCLUDE_LPTOOLS := true
-TW_INCLUDE_LPDUMP := true
 TW_USE_DMCTL := true
 TW_INCLUDE_7ZA := true
 TW_INCLUDE_LIBRESETPROP := true
@@ -170,6 +169,13 @@ TW_INCLUDE_RESETPROP_SOURCE := true
 TW_EXCLUDE_BASH := false
 TW_EXCLUDE_NANO := false
 TW_INCLUDE_ZSTD := true
+
+# lpdump: prebuilt/lpdump is a recovery-compatible shell script.
+# Installed via prebuilt/Android.mk to $(TARGET_RECOVERY_ROOT_OUT)/system/bin.
+# TW_INCLUDE_LPDUMP is intentionally left unset so the TWRP build system
+# does NOT pull the Android system lpdump binary (which needs binder/lpdump_service).
+# lpdumpd and liblpdump_interface-cpp are also excluded for the same reason.
+TW_INCLUDE_LPDUMP :=
 
 # TWRP file system
 TW_ENABLE_FS_COMPRESSION    := false

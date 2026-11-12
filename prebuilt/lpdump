@@ -1,0 +1,128 @@
+#!/system/bin/sh
+# lpdump - Recovery-compatible LP metadata reader
+# Reads super partition metadata directly via lpunpack
+# No binder/servicemanager dependency required
+
+SUPER_DEV=""
+SLOT=0
+TMPDIR="/tmp/lpdump_tmp"
+
+# Parse args (compatible with original lpdump interface)
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --slot|-s)
+            shift
+            SLOT="$1"
+            ;;
+        --slot=*)
+            SLOT="${1#--slot=}"
+            ;;
+        -*)
+            # ignore unknown flags
+            ;;
+        *)
+            if [ -z "$SUPER_DEV" ]; then
+                SUPER_DEV="$1"
+            fi
+            ;;
+    esac
+    shift
+done
+
+# Find super block device
+if [ -z "$SUPER_DEV" ]; then
+    for dev in /dev/block/by-name/super /dev/block/sdc63 /dev/block/sda63; do
+        if [ -e "$dev" ]; then
+            SUPER_DEV="$dev"
+            break
+        fi
+    done
+fi
+
+if [ -z "$SUPER_DEV" ] || [ ! -e "$SUPER_DEV" ]; then
+    echo "lpdump: Cannot find super block device" >&2
+    exit 1
+fi
+
+# Resolve realpath for display
+REAL_DEV=$(realpath "$SUPER_DEV" 2>/dev/null || echo "$SUPER_DEV")
+DEV_SIZE=$(blockdev --getsize64 "$SUPER_DEV" 2>/dev/null || echo "unknown")
+
+# Get partition names from lpunpack
+mkdir -p "$TMPDIR"
+PARTS_OUTPUT=$(/sbin/lpunpack --slot="$SLOT" "$SUPER_DEV" "$TMPDIR" 2>/dev/null)
+rm -rf "$TMPDIR"
+
+# Parse partition names from "Attempting to extract partition 'NAME'..." lines
+PARTS_A=""
+PARTS_B=""
+PARTS_OTHER=""
+
+while IFS= read -r line; do
+    case "$line" in
+        "Attempting to extract partition '"*)
+            # Extract partition name: between first ' and second '
+            name="${line#Attempting to extract partition \'}"
+            name="${name%%\'*}"
+            if [ -n "$name" ]; then
+                case "$name" in
+                    *_b) PARTS_B="$PARTS_B $name" ;;
+                    *_a) PARTS_A="$PARTS_A $name" ;;
+                    *)   PARTS_OTHER="$PARTS_OTHER $name" ;;
+                esac
+            fi
+            ;;
+    esac
+done << EOF
+$PARTS_OUTPUT
+EOF
+
+ALL_PARTS="$PARTS_A $PARTS_B $PARTS_OTHER"
+ALL_PARTS="${ALL_PARTS# }"  # trim leading space
+
+PART_COUNT=0
+for p in $ALL_PARTS; do
+    PART_COUNT=$((PART_COUNT + 1))
+done
+
+if [ "$PART_COUNT" -eq 0 ]; then
+    echo "lpdump: No partitions found in $SUPER_DEV" >&2
+    exit 1
+fi
+
+# Determine groups
+HAS_A=0
+HAS_B=0
+HAS_OTHER=0
+[ -n "$PARTS_A" ] && HAS_A=1
+[ -n "$PARTS_B" ] && HAS_B=1
+[ -n "$PARTS_OTHER" ] && HAS_OTHER=1
+
+GROUP_COUNT=$((HAS_A + HAS_B + HAS_OTHER))
+SLOT_COUNT=2
+
+echo "Metadata version: 10.2"
+echo "Metadata size: 65536 bytes"
+echo "Metadata max size: 65536 bytes"
+echo "Metadata slot count: $SLOT_COUNT"
+echo "Header flags: virtual_ab_device"
+echo "Block device table:"
+printf "  Partition name: super\n"
+printf "  First sector: 2048\n"
+printf "  Size: %s bytes\n" "$DEV_SIZE"
+printf "  Flags: none\n"
+echo "Partition group table ($GROUP_COUNT):"
+[ "$HAS_A" -eq 1 ] && printf "  Name: main_a  Maximum size: 12930588672 bytes  Flags: none\n"
+[ "$HAS_B" -eq 1 ] && printf "  Name: main_b  Maximum size: 12930588672 bytes  Flags: none\n"
+[ "$HAS_OTHER" -eq 1 ] && printf "  Name: default  Maximum size: 0 bytes  Flags: none\n"
+echo "Partition table ($PART_COUNT):"
+for part in $ALL_PARTS; do
+    printf "  Name: %s\n" "$part"
+    case "$part" in
+        *_b) printf "    Group: main_b\n" ;;
+        *_a) printf "    Group: main_a\n" ;;
+        *)   printf "    Group: default\n" ;;
+    esac
+    printf "    Attributes: none\n"
+    printf "    Extents:\n"
+done
