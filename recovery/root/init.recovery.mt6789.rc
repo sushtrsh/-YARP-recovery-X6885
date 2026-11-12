@@ -131,6 +131,14 @@ service prep_format /system/bin/sh /system/etc/prep_format.sh
 
 on property:servicemanager.ready=true
     setprop sys.boot_completed 1
+    start lpdumpd
+
+service lpdumpd /system/bin/lpdumpd
+    class main
+    user root
+    group root system cache
+    disabled
+    seclabel u:r:recovery:s0
 
 # Gatekeeper
 service vendor.gatekeeper-default /vendor/bin/hw/android.hardware.gatekeeper-service.trustonic
