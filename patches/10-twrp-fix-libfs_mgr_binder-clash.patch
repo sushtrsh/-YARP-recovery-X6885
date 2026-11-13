@@ -1,0 +1,30 @@
+--- a/bootable/recovery/etc/Android.bp
++++ b/bootable/recovery/etc/Android.bp
+@@ -177,10 +177,16 @@
+ }
+ 
+ cc_prebuilt_library {
+-    name: "libfs_mgr_binder.recovery",
++    name: "libfs_mgr_binder_twrp.recovery",
+     srcs: [":libfs_mgr_binder"],
+     stem: "libfs_mgr_binder",
+-    recovery: true
++    static: {
++        enabled: false,
++    },
++    shared: {
++        enabled: true,
++    },
++    recovery: true,
+ }
+ 
+ prebuilt_bin {
+@@ -188,7 +194,7 @@
+     src: ":lpdumpd",
+     filename: "lpdumpd",
+     required: [
+-        "libfs_mgr_binder.recovery",
++        "libfs_mgr_binder_twrp.recovery",
+         "liblpdump_interface-cpp.recovery",
+         "libprotobuf-cpp-full.recovery",
+     ],
