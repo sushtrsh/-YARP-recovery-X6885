@@ -12,7 +12,7 @@ on:
         required: true
         default: 'twrp-16.0'
       RECOVERY_REPO_URL:
-        description: 'URL Repo bootable/recovery (fork repo kamu)'
+        description: 'URL Repo bootable/recovery'
         required: true
         default: 'https://github.com/sushtrsh/android_bootable_recovery'
       RECOVERY_REPO_BRANCH:
@@ -20,7 +20,7 @@ on:
         required: true
         default: 'twrp-16.0'
       RECOVERY_COMMIT:
-        description: 'Pin commit bootable/recovery (HEAD = commit terbaru, custom = isi SHA)'
+        description: 'Pin commit bootable/recovery'
         required: true
         default: 'HEAD'
         type: choice
@@ -28,11 +28,11 @@ on:
           - HEAD
           - custom
       RECOVERY_COMMIT_CUSTOM:
-        description: 'SHA custom bootable/recovery (dipakai kalau pilih custom)'
+        description: 'SHA custom bootable/recovery'
         required: false
         default: ''
       BUILD_COMMIT:
-        description: 'Pin build/make (HEAD = tanpa pin, custom = isi SHA di bawah)'
+        description: 'Pin build/make'
         required: true
         default: '6262fe1107564663434ec257d275bc0f9573b976'
         type: choice
@@ -41,7 +41,7 @@ on:
           - HEAD
           - custom
       BUILD_COMMIT_CUSTOM:
-        description: 'SHA custom build/make (dipakai kalau pilih custom)'
+        description: 'SHA custom build/make)'
         required: false
         default: ''
       DEVICE_TREE_URL:
@@ -52,6 +52,10 @@ on:
         description: 'DEVICE_TREE_BRANCH'
         required: true
         default: 'test_X6885'
+        type: choice
+        options:
+          - test_X6885
+          - main
       DEVICE_PATH:
         description: 'DEVICE_PATH'
         required: true
@@ -61,7 +65,7 @@ on:
         required: true
         default: 'X6885'
       MAKEFILE_NAME:
-        description: 'MAKEFILE_NAME (lunch: <MAKEFILE_NAME>-bp2a-eng or <MAKEFILE_NAME>)'
+        description: 'MAKEFILE_NAME'
         required: true
         default: 'twrp_X6885'
       BUILD_TARGET:
@@ -69,7 +73,7 @@ on:
         required: true
         default: 'vendorboot'
       USE_CCACHE:
-        description: 'Use ccache (restore + save)'
+        description: 'Use ccache'
         required: true
         default: 'true'
         type: choice
@@ -168,6 +172,10 @@ jobs:
       run: |
         cd twrp
         git clone ${{ github.event.inputs.DEVICE_TREE_URL }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} ./${{ github.event.inputs.DEVICE_PATH }}
+        echo "==> Info commit device tree (branch: ${{ github.event.inputs.DEVICE_TREE_BRANCH }}):"
+        git -C ./${{ github.event.inputs.DEVICE_PATH }} log -1 --oneline
+        echo "==> Isi patches/ di device tree:"
+        ls ./${{ github.event.inputs.DEVICE_PATH }}/patches/
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
     - name: Set Swap Space
